@@ -21,6 +21,26 @@ function base64urlToUint8Array(base64url: string): Uint8Array {
   return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
 }
 
+async function fetchJwks(
+  teamDomain: string
+): Promise<{ keys: (JsonWebKey & { kid?: string })[] }> {
+  const url = `https://${teamDomain}/cdn-cgi/access/certs`;
+  const cache = caches.default;
+  const cacheKey = new Request(url);
+
+  const cached = await cache.match(cacheKey);
+  if (cached) return cached.json();
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`JWKS fetch failed: ${res.status}`);
+
+  const toCache = new Response(res.clone().body, res);
+  toCache.headers.set("Cache-Control", "max-age=3600");
+  await cache.put(cacheKey, toCache);
+
+  return res.json();
+}
+
 async function validateCfAccessJwt(token: string, env: Env): Promise<boolean> {
   try {
     const parts = token.split(".");
@@ -45,16 +65,11 @@ async function validateCfAccessJwt(token: string, env: Env): Promise<boolean> {
     const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
     if (!aud.includes(env.CF_ACCESS_AUD)) return false;
 
-    const certsRes = await fetch(
-      `https://${env.CF_ACCESS_TEAM_DOMAIN}/cdn-cgi/access/certs`
-    );
-    if (!certsRes.ok) return false;
-
-    const jwks = (await certsRes.json()) as {
-      keys: (JsonWebKey & { kid?: string })[];
-    };
+    const jwks = await fetchJwks(env.CF_ACCESS_TEAM_DOMAIN);
     const jwk = jwks.keys.find((k) => k.kid === header.kid);
     if (!jwk) return false;
+
+    if (header.alg !== "RS256") return false;
 
     const cryptoKey = await crypto.subtle.importKey(
       "jwk",
