@@ -57,7 +57,7 @@ async function validateCfAccessJwt(token: string, env: Env): Promise<boolean> {
     ) as { exp?: number; iss?: string; aud?: string | string[] };
 
     const now = Math.floor(Date.now() / 1000);
-    if (payload.exp !== undefined && payload.exp < now) return false;
+    if (typeof payload.exp !== "number" || payload.exp < now) return false;
 
     const expectedIss = `https://${env.CF_ACCESS_TEAM_DOMAIN}`;
     if (payload.iss !== expectedIss) return false;
