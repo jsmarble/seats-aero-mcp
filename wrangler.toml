@@ -1,0 +1,11 @@
+name = "seats-aero-mcp"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Secrets are configured via `wrangler secret put <NAME>` (never stored here):
+#   SEATS_AERO_API_KEY   - seats.aero Partner API key
+#   CF_ACCESS_TEAM_DOMAIN - Cloudflare Access team domain (e.g. your-team.cloudflareaccess.com)
+#   CF_ACCESS_AUD        - Cloudflare Access application audience tag (from Zero Trust dashboard)
+
+[observability]
+enabled = true

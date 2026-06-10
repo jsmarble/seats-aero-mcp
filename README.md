@@ -2,6 +2,8 @@
 
 An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server for the [seats.aero](https://seats.aero) Partner API. Lets AI assistants like Claude search for award flight availability in real time.
 
+Runs on **Cloudflare Workers**, protected by **Cloudflare Zero Trust / Access OAuth**.
+
 > **Requires a seats.aero Pro subscription** to get an API key.
 
 ## Tools
@@ -14,70 +16,93 @@ An [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server for th
 | `get_routes` | List all routes tracked by seats.aero for a given mileage program |
 | `live_search` | Real-time search querying the mileage program directly (slower, uses more quota) |
 
-## Setup
+## Deployment
 
-### 1. Install dependencies and build
+### Prerequisites
+
+- [Cloudflare account](https://dash.cloudflare.com) with Workers enabled
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) authenticated (`wrangler login`)
+- seats.aero Pro subscription for an API key
+- Cloudflare Zero Trust with an Access Application configured for OAuth
+
+### 1. Install dependencies
 
 ```bash
 npm install
-npm run build
 ```
 
-### 2. Configure your API key
+### 2. Configure secrets
 
-Get your API key from your [seats.aero](https://seats.aero) Pro account.
-
-Set it as an environment variable:
+Set the three required secrets via Wrangler (these are never stored in source control):
 
 ```bash
-export SEATS_AERO_API_KEY=your_api_key_here
+wrangler secret put SEATS_AERO_API_KEY
+wrangler secret put CF_ACCESS_TEAM_DOMAIN   # e.g. your-team.cloudflareaccess.com
+wrangler secret put CF_ACCESS_AUD           # Application Audience tag from Zero Trust dashboard
 ```
 
-Or create a `.env` file (copy from `.env.example`).
+The `CF_ACCESS_AUD` value comes from **Zero Trust → Access → Applications → your app → Overview**.
 
-### 3. Add to Claude Desktop
+### 3. Deploy
 
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```bash
+npm run deploy
+```
+
+The Worker is now live at `https://seats-aero-mcp.<your-subdomain>.workers.dev`.
+
+### 4. Configure Cloudflare Access
+
+In the Zero Trust dashboard, create (or update) an Access Application that protects `https://seats-aero-mcp.<your-subdomain>.workers.dev/*` with your OAuth provider. The Worker validates the `Cf-Access-Jwt-Assertion` header on every request and rejects any request that is not signed by your Access team.
+
+### 5. Connect an MCP client
+
+Configure your MCP client (e.g. Claude Desktop) to use the HTTP transport pointing at your Worker URL:
 
 ```json
 {
   "mcpServers": {
     "seats-aero": {
-      "command": "node",
-      "args": ["/absolute/path/to/seats-aero-mcp/dist/index.js"],
-      "env": {
-        "SEATS_AERO_API_KEY": "your_api_key_here"
-      }
+      "type": "http",
+      "url": "https://seats-aero-mcp.<your-subdomain>.workers.dev/mcp"
     }
   }
 }
 ```
 
-Restart Claude Desktop. You should see the seats.aero tools available.
+Clients that support Cloudflare Access OAuth will handle the authentication flow automatically.
+
+## Local development
+
+Copy `.dev.vars.example` to `.dev.vars` and fill in real values, then run:
+
+```bash
+npm run dev
+```
+
+Wrangler loads `.dev.vars` automatically for local secrets. Note: CF Access JWT validation is enforced even locally — disable it by temporarily removing the auth check in `src/index.ts` if needed, or by providing a valid local JWT.
+
+## Architecture
+
+- **Runtime**: Cloudflare Workers (Web-standard fetch handler)
+- **MCP transport**: `WebStandardStreamableHTTPServerTransport` (stateless HTTP mode)
+- **Auth**: Cloudflare Access JWT (`Cf-Access-Jwt-Assertion` header) validated via JWKS using Web Crypto API
+- **API calls**: Native `fetch` (no Node.js dependencies)
+
+Each request creates a fresh MCP server and transport instance — no persistent state is required.
 
 ## Usage examples
-
-Once connected, you can ask Claude things like:
 
 - *"Find business class award availability from SFO to Tokyo in June"*
 - *"Search for United miles availability from LAX to London next month"*
 - *"What routes does Aeroplan track from North America to Europe?"*
 - *"Do a live search for ANA first class from JFK to NRT on 2025-08-15 using United miles"*
 
-## Development
-
-```bash
-npm run build   # compile TypeScript
-npm start       # run the server
-```
-
 ## Disclaimer
 
 This project is an independent, unofficial tool and is **not affiliated with, endorsed by, or in any way associated with seats.aero**. All data is retrieved through the seats.aero Partner API using your own credentials.
 
-Use of this software is subject to the [seats.aero Terms of Service](https://seats.aero/terms). You are solely responsible for ensuring your usage complies with their terms, including any restrictions on API usage, rate limits, and permitted use cases.
-
-This software is provided "as is", without warranty of any kind. The author(s) are not liable for any damages, data loss, account suspension, or other consequences arising from the use of this software.
+Use of this software is subject to the [seats.aero Terms of Service](https://seats.aero/terms). You are solely responsible for ensuring your usage complies with their terms.
 
 ## License
 

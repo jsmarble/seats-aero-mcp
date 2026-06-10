@@ -1,23 +1,20 @@
 {
   "name": "seats-aero-mcp",
   "version": "1.0.0",
-  "description": "MCP server for seats.aero award flight availability API",
+  "description": "MCP server for seats.aero award flight availability API (Cloudflare Workers)",
   "type": "module",
-  "main": "dist/index.js",
-  "bin": {
-    "seats-aero-mcp": "dist/index.js"
-  },
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "node-fetch": "^3.3.2",
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "typescript": "^5.7.0"
+    "@cloudflare/workers-types": "^4.20260610.1",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.99.0"
   }
 }
