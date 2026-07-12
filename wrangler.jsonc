@@ -1,0 +1,33 @@
+/**
+ * Wrangler configuration for the seats.aero remote MCP server.
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ *
+ * Stateless MCP via createMcpHandler() — no Durable Objects.
+ *
+ * Callers supply their own seats.aero Partner API key per-request via the
+ * X-Seats-Aero-Api-Key header — no key is stored on the server.
+ *
+ * Optional secret (set with `wrangler secret put <NAME>`), only for a private
+ * single-user deployment where callers should not need to send a key:
+ *   SEATS_AERO_API_KEY  — fallback seats.aero Partner API key
+ *
+ * Optional vars (set below or in the dashboard) to restrict who can connect
+ * via Cloudflare Access; while unset the server is public:
+ *   ACCESS_TEAM_DOMAIN  — your Zero Trust team domain, e.g. "myteam"
+ *   ACCESS_APP_AUD      — the Access application's Audience (AUD) tag
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "seats-aero-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  }
+  // Uncomment and fill in to require Cloudflare Access (server is public otherwise):
+  // "vars": {
+  //   "ACCESS_TEAM_DOMAIN": "myteam",
+  //   "ACCESS_APP_AUD": "<aud tag from your Access application>"
+  // }
+}

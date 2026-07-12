@@ -1,0 +1,14 @@
+# Copy to .dev.vars for local development with `wrangler dev`.
+#
+# All values are OPTIONAL. Callers normally supply their own seats.aero key
+# per-request via the X-Seats-Aero-Api-Key header, so nothing is stored on
+# the server.
+
+# Optional fallback API key for a private single-user deployment. Leave unset
+# for a shared server where every caller sends their own key.
+# SEATS_AERO_API_KEY=your_api_key_here
+
+# Optional: enforce Cloudflare Access JWT validation in the Worker.
+# Leave unset for local development.
+# ACCESS_TEAM_DOMAIN=myteam
+# ACCESS_APP_AUD=your_access_application_aud_tag
