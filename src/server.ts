@@ -37,7 +37,7 @@ const takeParam = z
   .max(1000)
   .optional()
   .describe(
-    `Number of results per page (10-1000). Defaults to ${DEFAULT_TAKE}; increase only when you need exhaustive results.`
+    `Number of results per page (10-1000). Defaults to ${DEFAULT_TAKE}; increase only when you need exhaustive results.`,
   );
 
 const cursorParam = z
@@ -45,7 +45,7 @@ const cursorParam = z
   .int()
   .optional()
   .describe(
-    "Opaque pagination cursor from the `cursor` field of a previous response. Pass it together with `skip` to fetch subsequent pages."
+    "Opaque pagination cursor from the `cursor` field of a previous response. Pass it together with `skip` to fetch subsequent pages.",
   );
 
 const skipParam = z
@@ -54,7 +54,7 @@ const skipParam = z
   .min(0)
   .optional()
   .describe(
-    "Number of results already retrieved for this search. Use with `cursor` to paginate; deduplicate results by their `ID` field."
+    "Number of results already retrieved for this search. Use with `cursor` to paginate; deduplicate results by their `ID` field.",
   );
 
 const sourceParam = z
@@ -109,60 +109,56 @@ export function buildServer(apiKey: string): McpServer {
         origin_airport: z
           .string()
           .describe(
-            'Origin airport IATA code(s), comma-delimited for multiple (e.g. "SFO" or "SFO,LAX")'
+            'Origin airport IATA code(s), comma-delimited for multiple (e.g. "SFO" or "SFO,LAX")',
           ),
         destination_airport: z
           .string()
           .describe(
-            'Destination airport IATA code(s), comma-delimited for multiple (e.g. "FRA" or "FRA,LHR")'
+            'Destination airport IATA code(s), comma-delimited for multiple (e.g. "FRA" or "FRA,LHR")',
           ),
-        start_date: dateString
-          .optional()
-          .describe("Earliest departure date, YYYY-MM-DD"),
-        end_date: dateString
-          .optional()
-          .describe("Latest departure date, YYYY-MM-DD"),
+        start_date: dateString.optional().describe("Earliest departure date, YYYY-MM-DD"),
+        end_date: dateString.optional().describe("Latest departure date, YYYY-MM-DD"),
         cabins: z
           .string()
           .optional()
           .describe(
-            'Required cabin(s), comma-delimited (e.g. "business" or "business,first"). Options: economy, premium, business, first'
+            'Required cabin(s), comma-delimited (e.g. "business" or "business,first"). Options: economy, premium, business, first',
           ),
         sources: z
           .string()
           .optional()
           .describe(
-            `Mileage program(s) to include, comma-delimited (e.g. "united,aeroplan"). Known sources: ${KNOWN_SOURCES}`
+            `Mileage program(s) to include, comma-delimited (e.g. "united,aeroplan"). Known sources: ${KNOWN_SOURCES}`,
           ),
         carriers: z
           .string()
           .optional()
           .describe(
-            'Only return results involving these comma-separated carrier codes (e.g. "DL,AA")'
+            'Only return results involving these comma-separated carrier codes (e.g. "DL,AA")',
           ),
         only_direct_flights: z
           .boolean()
           .optional()
           .describe(
-            "Only return results with a direct flight available (default: false)"
+            "Only return results with a direct flight available (default: false)",
           ),
         include_trips: z
           .boolean()
           .optional()
           .describe(
-            "Include flight-level trip details in each result. Significantly increases response size (default: false)"
+            "Include flight-level trip details in each result. Significantly increases response size (default: false)",
           ),
         minify_trips: z
           .boolean()
           .optional()
           .describe(
-            "With include_trips, return a reduced set of fields per trip to shrink the response"
+            "With include_trips, return a reduced set of fields per trip to shrink the response",
           ),
         order_by: z
           .enum(["lowest_mileage"])
           .optional()
           .describe(
-            'Sort by cheapest mileage cost first. Omit for the default ordering (departure date, premium cabins ranked higher)'
+            "Sort by cheapest mileage cost first. Omit for the default ordering (departure date, premium cabins ranked higher)",
           ),
         take: takeParam,
         cursor: cursorParam,
@@ -171,7 +167,7 @@ export function buildServer(apiKey: string): McpServer {
           .boolean()
           .optional()
           .describe(
-            "Include dynamically-priced results normally filtered out as expensive (default: false)"
+            "Include dynamically-priced results normally filtered out as expensive (default: false)",
           ),
       },
     },
@@ -180,12 +176,12 @@ export function buildServer(apiKey: string): McpServer {
         return jsonResult(
           await client.request("/search", {
             params: { ...args, take: args.take ?? DEFAULT_TAKE },
-          })
+          }),
         );
       } catch (error) {
         return errorResult(error);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -204,12 +200,8 @@ export function buildServer(apiKey: string): McpServer {
           .enum(CABINS)
           .optional()
           .describe("Only return results with this cabin available"),
-        start_date: dateString
-          .optional()
-          .describe("Earliest departure date, YYYY-MM-DD"),
-        end_date: dateString
-          .optional()
-          .describe("Latest departure date, YYYY-MM-DD"),
+        start_date: dateString.optional().describe("Earliest departure date, YYYY-MM-DD"),
+        end_date: dateString.optional().describe("Latest departure date, YYYY-MM-DD"),
         origin_region: z
           .enum(REGIONS)
           .optional()
@@ -225,7 +217,7 @@ export function buildServer(apiKey: string): McpServer {
           .boolean()
           .optional()
           .describe(
-            "Include dynamically-priced results normally filtered out as expensive (default: false)"
+            "Include dynamically-priced results normally filtered out as expensive (default: false)",
           ),
       },
     },
@@ -234,12 +226,12 @@ export function buildServer(apiKey: string): McpServer {
         return jsonResult(
           await client.request("/availability", {
             params: { ...args, take: args.take ?? DEFAULT_TAKE },
-          })
+          }),
         );
       } catch (error) {
         return errorResult(error);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -256,28 +248,27 @@ export function buildServer(apiKey: string): McpServer {
         availability_id: z
           .string()
           .describe(
-            "The `ID` field of an Availability object from search_availability or bulk_availability"
+            "The `ID` field of an Availability object from search_availability or bulk_availability",
           ),
         include_filtered: z
           .boolean()
           .optional()
           .describe(
-            "Include expensive dynamically-priced trips that are filtered out by default (default: false)"
+            "Include expensive dynamically-priced trips that are filtered out by default (default: false)",
           ),
       },
     },
     async ({ availability_id, include_filtered }) => {
       try {
         return jsonResult(
-          await client.request(
-            `/trips/${encodeURIComponent(availability_id)}`,
-            { params: { include_filtered } }
-          )
+          await client.request(`/trips/${encodeURIComponent(availability_id)}`, {
+            params: { include_filtered },
+          }),
         );
       } catch (error) {
         return errorResult(error);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -298,7 +289,7 @@ export function buildServer(apiKey: string): McpServer {
       } catch (error) {
         return errorResult(error);
       }
-    }
+    },
   );
 
   server.registerTool(
@@ -313,18 +304,13 @@ export function buildServer(apiKey: string): McpServer {
         "an error. Live searches can fail transiently (e.g. the airline is down); retry sparingly with backoff.",
       annotations: { readOnlyHint: true, openWorldHint: true },
       inputSchema: {
-        origin_airport: z
-          .string()
-          .describe('Origin airport IATA code (e.g. "SFO")'),
+        origin_airport: z.string().describe('Origin airport IATA code (e.g. "SFO")'),
         destination_airport: z
           .string()
           .describe('Destination airport IATA code (e.g. "NRT")'),
         departure_date: dateString.describe("Departure date, YYYY-MM-DD"),
         source: sourceParam,
-        cabin: z
-          .enum(CABINS)
-          .optional()
-          .describe("Filter results to this cabin"),
+        cabin: z.enum(CABINS).optional().describe("Filter results to this cabin"),
         seat_count: z
           .number()
           .int()
@@ -336,13 +322,13 @@ export function buildServer(apiKey: string): McpServer {
           .boolean()
           .optional()
           .describe(
-            "Disable all result filters, including dynamic pricing and mismatched-airport filters (default: false)"
+            "Disable all result filters, including dynamic pricing and mismatched-airport filters (default: false)",
           ),
         show_dynamic_pricing: z
           .boolean()
           .optional()
           .describe(
-            "Disable only the dynamic-pricing filter, keeping mismatched-airport filters (default: false)"
+            "Disable only the dynamic-pricing filter, keeping mismatched-airport filters (default: false)",
           ),
       },
     },
@@ -353,12 +339,12 @@ export function buildServer(apiKey: string): McpServer {
             method: "POST",
             body: args,
             timeoutMs: 60_000,
-          })
+          }),
         );
       } catch (error) {
         return errorResult(error);
       }
-    }
+    },
   );
 
   return server;

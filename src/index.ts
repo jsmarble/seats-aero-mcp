@@ -29,11 +29,7 @@ function resolveApiKey(request: Request, env: Env): string | undefined {
 }
 
 export default {
-  async fetch(
-    request: Request,
-    env: Env,
-    ctx: ExecutionContext
-  ): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
     if (url.pathname === MCP_ROUTE) {
@@ -52,7 +48,7 @@ export default {
             },
             id: null,
           },
-          { status: 401 }
+          { status: 401 },
         );
       }
 

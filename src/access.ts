@@ -16,9 +16,7 @@ let cachedJwksIssuer: string | undefined;
 
 function getJwks(issuer: string) {
   if (!cachedJwks || cachedJwksIssuer !== issuer) {
-    cachedJwks = createRemoteJWKSet(
-      new URL(`${issuer}/cdn-cgi/access/certs`)
-    );
+    cachedJwks = createRemoteJWKSet(new URL(`${issuer}/cdn-cgi/access/certs`));
     cachedJwksIssuer = issuer;
   }
   return cachedJwks;
@@ -31,7 +29,7 @@ function unauthorized(message: string): Response {
       error: { code: -32001, message },
       id: null,
     },
-    { status: 401 }
+    { status: 401 },
   );
 }
 
@@ -44,7 +42,7 @@ function unauthorized(message: string): Response {
  */
 export async function enforceAccess(
   request: Request,
-  env: Env
+  env: Env,
 ): Promise<Response | null> {
   if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_APP_AUD) {
     return null;
@@ -60,7 +58,7 @@ export async function enforceAccess(
 
   if (!token) {
     return unauthorized(
-      "Missing Cloudflare Access token. This server must be reached through Cloudflare Access."
+      "Missing Cloudflare Access token. This server must be reached through Cloudflare Access.",
     );
   }
 

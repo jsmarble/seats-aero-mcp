@@ -1,5 +1,7 @@
 # seats-aero-mcp
 
+[![CI / Deploy](https://github.com/jsmarble/seats-aero-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jsmarble/seats-aero-mcp/actions/workflows/ci.yml)
+
 A public, remote [MCP (Model Context Protocol)](https://modelcontextprotocol.io) server for the [seats.aero](https://seats.aero) Partner API, running on [Cloudflare Workers](https://developers.cloudflare.com/workers/). It lets AI assistants like Claude search award flight availability — cached search, bulk availability, routes, flight-level trip details, and live search.
 
 Anyone can connect. **You bring your own seats.aero API key**: the server stores no credentials, requires no login, and simply forwards your key to seats.aero on each request.
@@ -28,7 +30,7 @@ Requests without a key get a `401` with instructions. The key is used for the on
 ### Claude Code
 
 ```bash
-claude mcp add --transport http seats-aero https://your-worker.example.com/mcp \
+claude mcp add --transport http seats-aero https://seats-aero-mcp.tolvit-llc.workers.dev/mcp \
   --header "X-Seats-Aero-Api-Key: YOUR_SEATS_AERO_KEY"
 ```
 
@@ -42,7 +44,7 @@ Via [`mcp-remote`](https://www.npmjs.com/package/mcp-remote), in `claude_desktop
     "seats-aero": {
       "command": "npx",
       "args": [
-        "mcp-remote", "https://your-worker.example.com/mcp",
+        "mcp-remote", "https://seats-aero-mcp.tolvit-llc.workers.dev/mcp",
         "--header", "X-Seats-Aero-Api-Key: YOUR_SEATS_AERO_KEY"
       ]
     }
@@ -54,11 +56,11 @@ Via [`mcp-remote`](https://www.npmjs.com/package/mcp-remote), in `claude_desktop
 
 ```bash
 npx @modelcontextprotocol/inspector@latest
-# Transport: Streamable HTTP → https://your-worker.example.com/mcp
+# Transport: Streamable HTTP → https://seats-aero-mcp.tolvit-llc.workers.dev/mcp
 # Add header: X-Seats-Aero-Api-Key: YOUR_SEATS_AERO_KEY
 ```
 
-A quick liveness check needs no key: `curl https://your-worker.example.com/health`
+A quick liveness check needs no key: `curl https://seats-aero-mcp.tolvit-llc.workers.dev/health`
 
 ### Things to ask once connected
 
@@ -138,10 +140,27 @@ MCP client ──HTTPS──▶ Worker (/mcp)
 
 ```bash
 npm run dev      # local dev server (wrangler dev)
-npm run check    # typecheck (tsc --noEmit)
+npm run lint     # lint + format check (Biome); lint:fix to apply
+npm run check    # typecheck src and tests (tsc --noEmit)
+npm test         # vitest suite running inside the workerd runtime
 npm run types    # regenerate worker-configuration.d.ts after wrangler.jsonc changes
-npm run deploy   # deploy to Cloudflare
+npm run deploy   # manual deploy to Cloudflare (CI normally does this)
 ```
+
+### CI/CD
+
+Every push and pull request runs the quality gates in [`.github/workflows/ci.yml`](.github/workflows/ci.yml): Biome lint + format check, strict typecheck of source and tests, the full test suite executed inside the real `workerd` runtime with all outbound seats.aero traffic mocked (tests fail if anything tries to hit the network), and a `wrangler deploy --dry-run` bundle check.
+
+Pushes to `main` that pass all gates deploy automatically via [`cloudflare/wrangler-action`](https://github.com/cloudflare/wrangler-action) to the `production` environment, followed by a smoke test against the live URL (health check, keyless-401, and tools/list). Deploys never cancel mid-flight; queued deploys wait.
+
+Repository secrets required for auto-deploy:
+
+| Secret | Purpose | How to get it |
+|--------|---------|---------------|
+| `CLOUDFLARE_API_TOKEN` | Lets CI deploy the Worker | Cloudflare dashboard → My Profile → [API Tokens](https://dash.cloudflare.com/profile/api-tokens) → Create Token → **Edit Cloudflare Workers** template, scoped to your account. Then `gh secret set CLOUDFLARE_API_TOKEN` |
+| `CLOUDFLARE_ACCOUNT_ID` | Target account | Cloudflare dashboard sidebar, or `wrangler whoami` |
+
+While `CLOUDFLARE_API_TOKEN` is unset the deploy job is skipped (quality gates still run), so CI stays green on forks and fresh clones. Dependabot keeps npm dependencies and pinned GitHub Actions current with weekly grouped PRs.
 
 ## Privacy
 

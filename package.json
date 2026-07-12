@@ -4,12 +4,19 @@
   "description": "Public remote MCP server for the seats.aero award flight availability API on Cloudflare Workers — bring your own API key",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "start": "wrangler dev",
     "deploy": "wrangler deploy",
     "types": "wrangler types",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit && tsc -p test --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -18,8 +25,12 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.3",
+    "@cloudflare/vitest-pool-workers": "^0.18.4",
     "@types/node": "^26.1.1",
+    "msw": "^2.15.0",
     "typescript": "^5.9.0",
+    "vitest": "^4.1.10",
     "wrangler": "^4.110.0"
   },
   "allowScripts": {

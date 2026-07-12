@@ -1,16 +1,13 @@
 const API_BASE = "https://seats.aero/partnerapi";
 
-export type QueryParams = Record<
-  string,
-  string | number | boolean | undefined
->;
+export type QueryParams = Record<string, string | number | boolean | undefined>;
 
 /** Error thrown for non-2xx responses from the seats.aero Partner API. */
 export class SeatsAeroApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
-    public readonly retryAfterSeconds?: number
+    public readonly retryAfterSeconds?: number,
   ) {
     super(message);
     this.name = "SeatsAeroApiError";
@@ -69,27 +66,25 @@ export class SeatsAeroClient {
     if (status === 401 || status === 403) {
       return new SeatsAeroApiError(
         `seats.aero rejected the API key (HTTP ${status}). Verify the key sent in the X-Seats-Aero-Api-Key header (or the server's fallback SEATS_AERO_API_KEY secret) is a valid Partner API key. ${detail}`,
-        status
+        status,
       );
     }
 
     if (status === 429) {
       const retryAfter = Number(response.headers.get("Retry-After"));
-      const retryAfterSeconds = Number.isFinite(retryAfter)
-        ? retryAfter
-        : undefined;
+      const retryAfterSeconds = Number.isFinite(retryAfter) ? retryAfter : undefined;
       return new SeatsAeroApiError(
         `seats.aero rate limit exceeded (HTTP 429).${
           retryAfterSeconds ? ` Retry after ${retryAfterSeconds}s.` : ""
         } ${detail}`,
         status,
-        retryAfterSeconds
+        retryAfterSeconds,
       );
     }
 
     return new SeatsAeroApiError(
       `seats.aero API error (HTTP ${status}): ${detail || response.statusText}`,
-      status
+      status,
     );
   }
 }
