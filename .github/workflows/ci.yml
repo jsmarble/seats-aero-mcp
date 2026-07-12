@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -57,13 +58,13 @@ jobs:
     name: Deploy to Cloudflare
     needs: quality
     if: >-
-      github.event_name == 'push' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
       github.ref == 'refs/heads/main' &&
       needs.quality.outputs.can-deploy == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://seats-aero-mcp.tolvit-llc.workers.dev
+      url: https://mcp.joshuamarble.io/seats-aero
     # Never cancel a deploy mid-flight; queue subsequent ones.
     concurrency:
       group: deploy-production
@@ -90,24 +91,28 @@ jobs:
       - name: Post-deploy smoke test
         run: |
           set -euo pipefail
-          BASE=https://seats-aero-mcp.tolvit-llc.workers.dev
+          MCP=https://mcp.joshuamarble.io/seats-aero
+          FALLBACK=https://seats-aero-mcp.tolvit-llc.workers.dev
 
-          echo "health check..."
+          echo "health check (custom domain)..."
           for _ in $(seq 1 10); do
-            body=$(curl -sf "$BASE/health") && break
+            body=$(curl -sf "$MCP/health") && break
             sleep 3
           done
           echo "$body" | grep -q '"status":"ok"'
 
-          echo "keyless /mcp must 401..."
-          code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/mcp" \
+          echo "health check (workers.dev fallback)..."
+          curl -sf "$FALLBACK/health" | grep -q '"status":"ok"'
+
+          echo "keyless MCP endpoint must 401..."
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$MCP" \
             -H 'Content-Type: application/json' \
             -H 'Accept: application/json, text/event-stream' \
             -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
           test "$code" = "401"
 
           echo "tools/list with dummy key must return the tool set..."
-          curl -s "$BASE/mcp" \
+          curl -s "$MCP" \
             -H 'X-Seats-Aero-Api-Key: ci-smoke-test' \
             -H 'Content-Type: application/json' \
             -H 'Accept: application/json, text/event-stream' \

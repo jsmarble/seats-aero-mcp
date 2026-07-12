@@ -51,12 +51,46 @@ describe("routing", () => {
     expect(response.status).toBe(200);
     const body = await response.json<Record<string, string>>();
     expect(body.status).toBe("ok");
-    expect(body.endpoint).toBe("/mcp");
+    expect(body.endpoint).toBe("/seats-aero");
   });
 
   it("returns 404 for unknown paths", async () => {
     const response = await SELF.fetch("https://example.com/nope");
     expect(response.status).toBe(404);
+  });
+
+  it("serves an index at the hostname root", async () => {
+    const response = await SELF.fetch("https://example.com/");
+    expect(response.status).toBe(200);
+    const body = await response.json<Record<string, string>>();
+    expect(body.endpoint).toBe("/seats-aero");
+  });
+
+  it("serves health under the base path", async () => {
+    const response = await SELF.fetch("https://example.com/seats-aero/health");
+    expect(response.status).toBe(200);
+    const body = await response.json<Record<string, string>>();
+    expect(body.status).toBe("ok");
+  });
+
+  it("serves the MCP endpoint at the base path", async () => {
+    const response = await SELF.fetch("https://example.com/seats-aero", {
+      method: "POST",
+      headers: { ...JSON_HEADERS, "X-Seats-Aero-Api-Key": "test-key" },
+      body: rpc("tools/list"),
+    });
+    expect(response.status).toBe(200);
+    const result = await readRpcResult(response);
+    expect(result.result.tools.length).toBe(5);
+  });
+
+  it("keeps the legacy /mcp endpoint working alongside the base path", async () => {
+    const response = await SELF.fetch("https://example.com/mcp", {
+      method: "POST",
+      headers: { ...JSON_HEADERS, "X-Seats-Aero-Api-Key": "test-key" },
+      body: rpc("tools/list"),
+    });
+    expect(response.status).toBe(200);
   });
 });
 

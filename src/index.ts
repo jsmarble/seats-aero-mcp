@@ -2,7 +2,22 @@ import { createMcpHandler } from "agents/mcp";
 import { enforceAccess } from "./access";
 import { buildServer } from "./server";
 
-const MCP_ROUTE = "/mcp";
+// The MCP endpoint is served at both paths so the workers.dev URL (/mcp) and
+// the shared MCP hostname (mcp.joshuamarble.io/seats-aero, via BASE_PATH)
+// keep working. BASE_PATH is set in wrangler.jsonc.
+const LEGACY_MCP_ROUTE = "/mcp";
+
+type Route = "mcp" | "health" | "index" | null;
+
+function resolveRoute(pathname: string, env: Env): Route {
+  const base = env.BASE_PATH?.replace(/\/+$/, "");
+  if (pathname === LEGACY_MCP_ROUTE || (base && pathname === base)) return "mcp";
+  if (pathname === "/health" || (base && pathname === `${base}/health`)) {
+    return "health";
+  }
+  if (pathname === "/") return "index";
+  return null;
+}
 
 /**
  * Resolves the seats.aero Partner API key for this request. Callers supply
@@ -31,8 +46,9 @@ function resolveApiKey(request: Request, env: Env): string | undefined {
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    const route = resolveRoute(url.pathname, env);
 
-    if (url.pathname === MCP_ROUTE) {
+    if (route === "mcp") {
       const denied = await enforceAccess(request, env);
       if (denied) return denied;
 
@@ -55,14 +71,14 @@ export default {
       // A fresh McpServer per request: the handler is stateless and the MCP
       // SDK forbids reconnecting an already-connected server instance.
       const server = buildServer(apiKey);
-      return createMcpHandler(server, { route: MCP_ROUTE })(request, env, ctx);
+      return createMcpHandler(server, { route: url.pathname })(request, env, ctx);
     }
 
-    if (url.pathname === "/" || url.pathname === "/health") {
+    if (route === "health" || route === "index") {
       return Response.json({
         name: "seats-aero-mcp",
         status: "ok",
-        endpoint: MCP_ROUTE,
+        endpoint: env.BASE_PATH || LEGACY_MCP_ROUTE,
         transport: "streamable-http",
       });
     }

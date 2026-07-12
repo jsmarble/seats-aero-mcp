@@ -14,7 +14,7 @@ Built on the stateless [`createMcpHandler()`](https://developers.cloudflare.com/
 
 You need two things:
 
-1. **The server URL** — `https://<worker-host>/mcp` (see [Self-hosting](#self-hosting) to deploy your own)
+1. **The server URL** — `https://mcp.joshuamarble.io/seats-aero` (or `https://seats-aero-mcp.tolvit-llc.workers.dev/mcp` as a fallback; see [Self-hosting](#self-hosting) to deploy your own)
 2. **Your seats.aero Partner API key** — sent as an HTTP header on every request
 
 Your MCP client must support custom headers on remote servers. Any of these headers works:
@@ -30,7 +30,7 @@ Requests without a key get a `401` with instructions. The key is used for the on
 ### Claude Code
 
 ```bash
-claude mcp add --transport http seats-aero https://seats-aero-mcp.tolvit-llc.workers.dev/mcp \
+claude mcp add --transport http seats-aero https://mcp.joshuamarble.io/seats-aero \
   --header "X-Seats-Aero-Api-Key: YOUR_SEATS_AERO_KEY"
 ```
 
@@ -44,7 +44,7 @@ Via [`mcp-remote`](https://www.npmjs.com/package/mcp-remote), in `claude_desktop
     "seats-aero": {
       "command": "npx",
       "args": [
-        "mcp-remote", "https://seats-aero-mcp.tolvit-llc.workers.dev/mcp",
+        "mcp-remote", "https://mcp.joshuamarble.io/seats-aero",
         "--header", "X-Seats-Aero-Api-Key: YOUR_SEATS_AERO_KEY"
       ]
     }
@@ -56,11 +56,11 @@ Via [`mcp-remote`](https://www.npmjs.com/package/mcp-remote), in `claude_desktop
 
 ```bash
 npx @modelcontextprotocol/inspector@latest
-# Transport: Streamable HTTP → https://seats-aero-mcp.tolvit-llc.workers.dev/mcp
+# Transport: Streamable HTTP → https://mcp.joshuamarble.io/seats-aero
 # Add header: X-Seats-Aero-Api-Key: YOUR_SEATS_AERO_KEY
 ```
 
-A quick liveness check needs no key: `curl https://seats-aero-mcp.tolvit-llc.workers.dev/health`
+A quick liveness check needs no key: `curl https://mcp.joshuamarble.io/seats-aero/health`
 
 ### Things to ask once connected
 
@@ -99,6 +99,8 @@ npm run deploy
 ```
 
 That's it — no secrets or bindings are required for a public deployment. The endpoint is `https://<worker>.<your-subdomain>.workers.dev/mcp`, or put the Worker behind a [custom domain or route](https://developers.cloudflare.com/workers/configuration/routing/).
+
+This deployment uses a shared MCP hostname: the Worker holds `mcp.joshuamarble.io` as a [Custom Domain](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/) (DNS and certificate are auto-managed by Cloudflare) and serves its endpoint at the `BASE_PATH` var (`/seats-aero`), with the legacy `/mcp` path still answered on workers.dev. Additional MCP servers join the same hostname by claiming `mcp.joshuamarble.io/<their-path>*` [route patterns](https://developers.cloudflare.com/workers/configuration/routing/routes/) in their own wrangler config — routes take precedence over the Custom Domain, so this Worker keeps handling everything unclaimed.
 
 ### Configuration reference
 

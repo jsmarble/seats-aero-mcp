@@ -24,10 +24,25 @@
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
     "enabled": true
+  },
+  // Keep the workers.dev URL as a secondary endpoint alongside the custom domain.
+  "workers_dev": true,
+  // mcp.joshuamarble.io is the shared hostname for all MCP servers. This
+  // worker holds the hostname as a Custom Domain (auto-managed DNS + cert)
+  // and serves its endpoint at BASE_PATH. Future MCP servers on the same
+  // hostname claim `mcp.joshuamarble.io/<their-path>*` route patterns, which
+  // take precedence over the Custom Domain.
+  "routes": [
+    {
+      "pattern": "mcp.joshuamarble.io",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    // Path of this server's MCP endpoint on the shared hostname.
+    "BASE_PATH": "/seats-aero"
+    // Uncomment and fill in to require Cloudflare Access (server is public otherwise):
+    // "ACCESS_TEAM_DOMAIN": "myteam",
+    // "ACCESS_APP_AUD": "<aud tag from your Access application>"
   }
-  // Uncomment and fill in to require Cloudflare Access (server is public otherwise):
-  // "vars": {
-  //   "ACCESS_TEAM_DOMAIN": "myteam",
-  //   "ACCESS_APP_AUD": "<aud tag from your Access application>"
-  // }
 }
