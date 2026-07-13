@@ -1,6 +1,5 @@
 import { createMcpHandler } from "agents/mcp";
 import { enforceAccess } from "./access";
-import { directoryHtml, directoryJson } from "./directory";
 import { buildServer } from "./server";
 
 // The MCP endpoint is served at both paths so the workers.dev URL (/mcp) and
@@ -75,24 +74,16 @@ export default {
       return createMcpHandler(server, { route: url.pathname })(request, env, ctx);
     }
 
-    if (route === "health") {
+    // The hostname root is normally served by the mcp-directory worker's
+    // `mcp.joshuamarble.io/*` route; this self-describing index only answers
+    // on workers.dev (and while that worker is absent).
+    if (route === "health" || route === "index") {
       return Response.json({
         name: "seats-aero-mcp",
         status: "ok",
         endpoint: env.BASE_PATH || LEGACY_MCP_ROUTE,
         transport: "streamable-http",
       });
-    }
-
-    // This Worker holds the shared hostname's Custom Domain, so the root
-    // serves a directory of every MCP server hosted on it.
-    if (route === "index") {
-      if (request.headers.get("Accept")?.includes("text/html")) {
-        return new Response(directoryHtml(url.origin), {
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        });
-      }
-      return Response.json(directoryJson(url.origin));
     }
 
     return new Response("Not Found", { status: 404 });

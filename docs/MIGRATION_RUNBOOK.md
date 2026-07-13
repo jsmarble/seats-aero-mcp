@@ -150,7 +150,7 @@ Rewrite (don't append). Must contain, in order: what it is + BYOK statement (no 
 7. Don't redeclare wrangler-`vars` in `env.d.ts` (literal-type merge conflict); declare only secrets/undeclared optionals there.
 8. Interpolating `${{ secrets.X }}` in a job-level `if` doesn't work — export a step output from the quality job.
 9. The upstream repo's docs index may omit live endpoints — probe with unauthenticated requests (401 = exists, 404 = doesn't).
-10. First deploy of a new route: only paths matching `mcp.joshuamarble.io/<name>*` reach the new worker; anything else on the hostname falls through to the custom-domain worker (seats-aero-mcp), whose root `/` serves a directory of all hosted servers (HTML for browsers, JSON otherwise). **Register the new server there**: add an entry to `src/directory.ts` in seats-aero-mcp, update its root-index tests in `test/worker.spec.ts`, and push (its CI deploys the change).
+10. First deploy of a new route: only paths matching `mcp.joshuamarble.io/<name>*` reach the new worker; the hostname root `/` and all unclaimed paths are served by the standalone **mcp-directory** worker (repo `jsmarble/mcp-directory`, catch-all route `mcp.joshuamarble.io/*` — specific server routes beat the wildcard). **Register the new server there**: add an entry to `src/directory.ts` in mcp-directory, update its tests, and push (its CI deploys the change). The seats-aero-mcp worker still holds the hostname's Custom Domain purely as the DNS/cert anchor — do not remove it.
 
 ## 10. One-shot order of operations
 
@@ -161,7 +161,7 @@ npm install (+approve-scripts) → npm run types → biome + tests green locally
 wrangler dev smoke test (health, 401, tools/list, dummy-key forwarding) →
 copy+adapt ci.yml/dependabot → actionlint → set CLOUDFLARE_ACCOUNT_ID secret →
 local deploy → live verification on mcp.joshuamarble.io/<name> →
-add server to seats-aero-mcp src/directory.ts (root index) and push that repo →
+add server to mcp-directory src/directory.ts (root index) and push that repo →
 README rewrite → commit+push → watch CI green →
 HUMAN GATE: ask Joshua for CLOUDFLARE_API_TOKEN secret → rerun/dispatch → confirm CI deploy+smoke green →
 gh repo edit description → report URLs and any deviations

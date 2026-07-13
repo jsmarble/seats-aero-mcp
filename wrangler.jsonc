@@ -28,14 +28,19 @@
   // Keep the workers.dev URL as a secondary endpoint alongside the custom domain.
   "workers_dev": true,
   // mcp.joshuamarble.io is the shared hostname for all MCP servers. This
-  // worker holds the hostname as a Custom Domain (auto-managed DNS + cert)
-  // and serves its endpoint at BASE_PATH. Future MCP servers on the same
-  // hostname claim `mcp.joshuamarble.io/<their-path>*` route patterns, which
-  // take precedence over the Custom Domain.
+  // worker holds the hostname as a Custom Domain (the DNS + cert anchor) and,
+  // like every other server, claims its own `/<name>*` route — routes take
+  // precedence over the Custom Domain, and the mcp-directory worker's
+  // catch-all `mcp.joshuamarble.io/*` route serves the root index and any
+  // unclaimed path (specific routes beat the wildcard).
   "routes": [
     {
       "pattern": "mcp.joshuamarble.io",
       "custom_domain": true
+    },
+    {
+      "pattern": "mcp.joshuamarble.io/seats-aero*",
+      "zone_name": "joshuamarble.io"
     }
   ],
   "vars": {
