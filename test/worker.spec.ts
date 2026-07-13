@@ -59,11 +59,27 @@ describe("routing", () => {
     expect(response.status).toBe(404);
   });
 
-  it("serves an index at the hostname root", async () => {
+  it("serves a JSON server directory at the hostname root", async () => {
     const response = await SELF.fetch("https://example.com/");
     expect(response.status).toBe(200);
-    const body = await response.json<Record<string, string>>();
-    expect(body.endpoint).toBe("/seats-aero");
+    const body = await response.json<{
+      servers: { name: string; endpoint: string }[];
+    }>();
+    const endpoints = body.servers.map((server) => server.endpoint);
+    expect(endpoints).toContain("https://example.com/seats-aero");
+    expect(endpoints).toContain("https://example.com/tripit");
+  });
+
+  it("serves an HTML server directory to browsers", async () => {
+    const response = await SELF.fetch("https://example.com/", {
+      headers: { Accept: "text/html,application/xhtml+xml" },
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toContain("text/html");
+    const html = await response.text();
+    expect(html).toContain("MCP servers");
+    expect(html).toContain("/seats-aero");
+    expect(html).toContain("/tripit");
   });
 
   it("serves health under the base path", async () => {
